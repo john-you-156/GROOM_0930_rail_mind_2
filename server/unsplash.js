@@ -29,11 +29,11 @@ export function unsplashHeaders(accessKey) {
   };
 }
 
-export function searchUrl(query) {
+export function searchUrl(query, { perPage = 12, page = 1 } = {}) {
   const params = new URLSearchParams({
     query: normalizeQuery(query),
-    per_page: '12',
-    orientation: 'portrait',
+    per_page: String(Math.min(Math.max(perPage, 1), 30)),
+    page: String(Math.min(Math.max(page, 1), 20)),
     content_filter: 'high',
   });
   return `${UNSPLASH_API}/search/photos?${params}`;

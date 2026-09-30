@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { downloadUrl, normalizePhoto, normalizeQuery, searchUrl } from './unsplash';
+import { getEmotionThemes, selectThemeQueries } from './photoThemes';
 
 describe('Unsplash server helpers', () => {
   it('normalizes and limits search queries', () => {
@@ -27,6 +28,15 @@ describe('Unsplash server helpers', () => {
   it('applies safe Unsplash search parameters', () => {
     const url = new URL(searchUrl('quiet lake'));
     expect(url.searchParams.get('content_filter')).toBe('high');
-    expect(url.searchParams.get('orientation')).toBe('portrait');
+    expect(url.searchParams.get('orientation')).toBeNull();
+  });
+
+  it('mixes distinct visual perspectives for each emotion', () => {
+    const first = selectThemeQueries('calm', 0);
+    const next = selectThemeQueries('calm', 1);
+    expect(first).toHaveLength(2);
+    expect(new Set(first).size).toBe(2);
+    expect(next).not.toEqual(first);
+    expect(getEmotionThemes('calm').map((theme) => theme.label)).toContain('느린 여정');
   });
 });

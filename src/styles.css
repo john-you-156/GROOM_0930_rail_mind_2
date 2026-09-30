@@ -110,6 +110,11 @@ main { flex: 1; }
 .photo-search { display: flex; max-width: 460px; border-bottom: 1px solid #9aa09b; margin: 0 0 16px; }
 .photo-search input { flex: 1; border: 0; background: transparent; padding: 12px 4px; outline: none; }
 .photo-search button { border: 0; background: none; font-weight: 700; color: var(--green); cursor: pointer; }
+.photo-scope-note { margin: -5px 0 13px; color: #718078; font-size: 11px; }
+.photo-perspectives { display: flex; flex-wrap: wrap; gap: 7px; margin: 0 0 16px; }
+.photo-perspectives button { border: 1px solid #d5d8d3; background: #f9f7f2; color: #59655f; border-radius: 999px; padding: 8px 12px; font-size: 10px; cursor: pointer; }
+.photo-perspectives button:hover { border-color: var(--green); color: var(--green); }
+.photo-perspectives .refresh-perspective { background: var(--green); border-color: var(--green); color: white; }
 .sample-banner, .error-banner { padding: 10px 14px; border-radius: 10px; font-size: 11px; margin: 12px 0; background: #e7ede9; color: #53675f; }
 .error-banner { background: #f4e5df; color: #875d52; }
 .photo-grid, .loading-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin: 25px 0 30px; }

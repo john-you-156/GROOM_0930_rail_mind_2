@@ -16,6 +16,7 @@ import {
   trackDownload,
 } from './services';
 import { buildPublicText, chooseStationName, containsCrisisExpression } from './rules';
+import { getEmotionThemes } from '../server/photoThemes';
 
 const initialSession = () => ({
   id: createId(),
@@ -262,12 +263,14 @@ function PhotoStep({ session, update, onNext, selectedEmotion }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isSample, setIsSample] = useState(true);
+  const [variation, setVariation] = useState(0);
+  const themes = getEmotionThemes(selectedEmotion.id);
 
-  const load = async (customQuery = '') => {
+  const load = async (customQuery = '', requestedVariation = variation) => {
     setLoading(true);
     setError('');
     try {
-      const result = await fetchPhotos(selectedEmotion.id, customQuery);
+      const result = await fetchPhotos(selectedEmotion.id, customQuery, requestedVariation);
       setPhotos(result.photos);
       setIsSample(result.isSample);
     } catch (loadError) {
@@ -279,6 +282,14 @@ function PhotoStep({ session, update, onNext, selectedEmotion }) {
     }
   };
 
+  const exploreMore = () => {
+    const nextVariation = variation + 1;
+    setVariation(nextVariation);
+    setQuery('');
+    update({ photo: null });
+    load('', nextVariation);
+  };
+
   useEffect(() => { load(); }, [selectedEmotion.id]);
 
   return (
@@ -286,10 +297,19 @@ function PhotoStep({ session, update, onNext, selectedEmotion }) {
       <span className="step-kicker">두 번째 정거장</span>
       <h2>지금 마음과 닮은<br />장면을 골라보세요</h2>
       <p className="step-description">사진은 마음을 판단하지 않아요. 그저 말보다 먼저 다가오는 장면을 선택해보세요.</p>
+      <p className="photo-scope-note">자연·사람·공간·추상·여정의 장면을 함께 살펴봅니다.</p>
       <form className="photo-search" onSubmit={(event) => { event.preventDefault(); load(query); }}>
         <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="다른 장면 검색하기" aria-label="사진 검색어" />
         <button type="submit">검색</button>
       </form>
+      <div className="photo-perspectives" aria-label="사진 관점 선택">
+        {themes.map((theme) => (
+          <button key={theme.label} type="button" onClick={() => { setQuery(theme.query); load(theme.query); }}>
+            {theme.label}
+          </button>
+        ))}
+        <button type="button" className="refresh-perspective" onClick={exploreMore}>↻ 다른 관점 보기</button>
+      </div>
       {isSample && <div className="sample-banner">샘플 사진 모드 · 키를 연결하면 Unsplash 검색이 활성화됩니다</div>}
       {error && <div className="error-banner">{error} 샘플 사진을 보여드릴게요.</div>}
       {loading ? <div className="loading-grid"><i /><i /><i /><i /><i /><i /></div> : (

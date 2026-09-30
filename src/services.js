@@ -1,4 +1,5 @@
 import { emotionSearchTerms, samplePhotos } from './data';
+import { selectThemeQueries } from '../server/photoThemes';
 
 const RECORDS_KEY = 'maeumStation:records:v1';
 const ACCESS_KEY = import.meta.env.VITE_UNSPLASH_ACCESS_KEY;
@@ -49,37 +50,53 @@ function sampleResult(emotionId) {
   return { photos: [...matched, ...rest].slice(0, 6), isSample: true };
 }
 
-async function fetchFromProxy(query) {
-  const params = new URLSearchParams({ query });
+async function fetchFromProxy(emotionId, query, variation) {
+  const params = new URLSearchParams(query
+    ? { query }
+    : { emotion: emotionId, variation: String(variation) });
   const response = await fetch(`/api/photos?${params}`);
   if (!response.ok) throw new Error('Proxy unavailable');
   const data = await response.json();
   return { photos: data.photos, isSample: false };
 }
 
-export async function fetchPhotos(emotionId, customQuery = '') {
+export async function fetchPhotos(emotionId, customQuery = '', variation = 0) {
   const query = customQuery.trim() || emotionSearchTerms[emotionId] || 'calm nature';
   if (!ACCESS_KEY) {
     try {
-      return await fetchFromProxy(query);
+      return await fetchFromProxy(emotionId, customQuery.trim(), variation);
     } catch {
       return sampleResult(emotionId);
     }
   }
 
-  const params = new URLSearchParams({
-    query,
-    per_page: '12',
-    orientation: 'portrait',
-    content_filter: 'high',
-  });
-  const response = await fetch(`https://api.unsplash.com/search/photos?${params}`, {
-    headers: { Authorization: `Client-ID ${ACCESS_KEY}` },
-  });
-
-  if (!response.ok) throw new Error('사진을 불러오지 못했습니다.');
-  const data = await response.json();
-  return { photos: data.results.slice(0, 6).map(mapUnsplashPhoto), isSample: false };
+  const queries = customQuery.trim() ? [query] : selectThemeQueries(emotionId, variation);
+  const responses = await Promise.all(queries.map((searchQuery) => {
+    const params = new URLSearchParams({
+      query: searchQuery,
+      per_page: customQuery.trim() ? '12' : '6',
+      page: String((variation % 3) + 1),
+      content_filter: 'high',
+    });
+    return fetch(`https://api.unsplash.com/search/photos?${params}`, {
+      headers: { Authorization: `Client-ID ${ACCESS_KEY}` },
+    });
+  }));
+  if (responses.some((response) => !response.ok)) throw new Error('사진을 불러오지 못했습니다.');
+  const payloads = await Promise.all(responses.map((response) => response.json()));
+  const seen = new Set();
+  const mixed = [];
+  const largest = Math.max(...payloads.map((payload) => payload.results.length), 0);
+  for (let index = 0; index < largest; index += 1) {
+    payloads.forEach((payload) => {
+      const photo = payload.results[index];
+      if (photo && !seen.has(photo.id)) {
+        seen.add(photo.id);
+        mixed.push(photo);
+      }
+    });
+  }
+  return { photos: mixed.slice(0, 6).map(mapUnsplashPhoto), isSample: false };
 }
 
 export async function trackDownload(photo) {
