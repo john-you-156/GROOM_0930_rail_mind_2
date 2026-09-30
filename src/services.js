@@ -43,14 +43,30 @@ function mapUnsplashPhoto(photo) {
   };
 }
 
+function sampleResult(emotionId) {
+  const matched = samplePhotos.filter((photo) => photo.moods.includes(emotionId));
+  const rest = samplePhotos.filter((photo) => !photo.moods.includes(emotionId));
+  return { photos: [...matched, ...rest].slice(0, 6), isSample: true };
+}
+
+async function fetchFromProxy(query) {
+  const params = new URLSearchParams({ query });
+  const response = await fetch(`/api/photos?${params}`);
+  if (!response.ok) throw new Error('Proxy unavailable');
+  const data = await response.json();
+  return { photos: data.photos, isSample: false };
+}
+
 export async function fetchPhotos(emotionId, customQuery = '') {
+  const query = customQuery.trim() || emotionSearchTerms[emotionId] || 'calm nature';
   if (!ACCESS_KEY) {
-    const matched = samplePhotos.filter((photo) => photo.moods.includes(emotionId));
-    const rest = samplePhotos.filter((photo) => !photo.moods.includes(emotionId));
-    return { photos: [...matched, ...rest].slice(0, 6), isSample: true };
+    try {
+      return await fetchFromProxy(query);
+    } catch {
+      return sampleResult(emotionId);
+    }
   }
 
-  const query = customQuery.trim() || emotionSearchTerms[emotionId] || 'calm nature';
   const params = new URLSearchParams({
     query,
     per_page: '12',
@@ -67,11 +83,12 @@ export async function fetchPhotos(emotionId, customQuery = '') {
 }
 
 export async function trackDownload(photo) {
-  if (!ACCESS_KEY || !photo?.downloadLocation) return;
+  if (!photo?.downloadLocation) return;
   try {
-    await fetch(photo.downloadLocation, {
-      headers: { Authorization: `Client-ID ${ACCESS_KEY}` },
-    });
+    const isProxyEndpoint = photo.downloadLocation.startsWith('/api/');
+    await fetch(photo.downloadLocation, isProxyEndpoint
+      ? undefined
+      : { headers: { Authorization: `Client-ID ${ACCESS_KEY}` } });
   } catch {
     // Tracking failure should not block the user's local export.
   }

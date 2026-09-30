@@ -71,3 +71,13 @@ VITE_UNSPLASH_ACCESS_KEY=your_access_key
 GitHub 저장소의 `Settings → Pages → Build and deployment`에서 Source를 `GitHub Actions`로 선택해야 합니다.
 
 공개 GitHub Pages 빌드에는 Unsplash 키를 넣지 않으며 샘플 사진 모드로 동작합니다. 실제 Unsplash API를 공개 서비스에서 사용하려면 키를 숨기는 서버리스 프록시가 필요합니다.
+
+## Vercel 공개 배포
+
+Vercel로 배포하면 `api/photos.js`와 `api/download.js`가 서버리스 함수로 실행되어 공개 앱에서도 실제 Unsplash 사진을 사용할 수 있습니다.
+
+1. Vercel에서 이 GitHub 저장소를 Import합니다.
+2. 프로젝트 환경변수 `UNSPLASH_ACCESS_KEY`에 Unsplash Access Key를 저장합니다.
+3. Production으로 배포합니다.
+
+키 이름에 `VITE_`를 붙이지 않아야 브라우저 번들에 포함되지 않습니다. 프런트엔드는 같은 출처의 `/api/photos`만 호출하며, 프록시를 사용할 수 없는 환경에서는 샘플 사진으로 자동 전환됩니다.
